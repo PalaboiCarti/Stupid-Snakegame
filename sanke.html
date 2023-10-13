@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanke</title>
+    <style>
+        *{
+            margin: 0px;
+            padding: 0px;
+        }
+        body{
+            font-family: "Lucida Console", "Courier New", monospace;
+            font-size: 30px;
+            color: white;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas{
+            border: 1px solid white;
+        }
+        p{
+            font-size: 15px;
+            color:white;
+        }
+        h1{
+            margin: 0px;
+            padding: 0px;
+        }
+        h2{
+            margin: 10px;
+            font-size: 20px;
+            padding: 10px;
+        }
+    </style>    
+</head>
+
+<body>
+    <h1>SANKE</h1>
+    <canvas id="game" width="400" height="400"></canvas>
+    <h2>How to play:</h2>
+    <p>Use the W, A, S, D or arrow keys to control the direction of the snake.</p>
+    <p>Eating the fruit in the map lengthens the snake, and adds up to your score.</p>
+    <p>Moving towards an edge of the map will transport you to the edge opposite of it.</p>
+    <p>How long will it take for you to die?</p>
+    <p>Fare well in your travels, Sanke.</p>
+    <p>Let your reincarnations redeem you.</p>
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+
+        class SnakePart {
+          constructor(x, y) {
+            this.x = x;
+            this.y = y;
+          }
+        }
+
+        let speed = 20;
+
+        let tileCount = 20;
+        let tileSize = canvas.width / tileCount - 4;
+
+        let headX = Math.floor(Math.random() * tileCount);
+        let headY = Math.floor(Math.random() * tileCount);
+        const snake = [];
+        let tailLength = 0;
+
+        let appleX = Math.floor(Math.random() * tileCount);
+        let appleY = Math.floor(Math.random() * tileCount);
+
+        let inputsXVelocity = 0;
+        let inputsYVelocity = 0;
+
+        let xVelocity = 0;
+        let yVelocity = 0;
+
+        let score = 0;
+
+        //game loop
+        function drawGame() {
+          xVelocity = inputsXVelocity;
+          yVelocity = inputsYVelocity;
+
+          changeSnakePosition();
+          let result = isGameOver();
+          if (result === true) {
+            return;
+          }else {
+
+            clearScreen();
+
+            checkAppleCollision();
+            drawApple();
+            drawSnake();
+
+            drawScore();
+
+            setTimeout(drawGame, 1000 / speed);
+          }
+        }
+
+        function isGameOver() {
+          let gameOver = false;
+
+          if (yVelocity === 0 && xVelocity === 0) {
+            return false;
+          }
+
+
+          //eat self
+          for (let i = 0; i < snake.length; i++) {
+            let part = snake[i];
+            if (part.x === headX && part.y === headY) {
+              gameOver = true;
+              break;
+            }
+          }
+
+          if (gameOver) {
+            ctx.fillStyle = "white";
+            ctx.font = "30px Verdana";
+            ctx.fillText("LMFAO YOU DIED!!", canvas.width / 7, canvas.height / 2);
+          }
+
+          return gameOver;
+          document.body.addEventListener("keydown", keyDown);
+            function keyDown(event) {
+              if ( event.keyCode == 32){
+                gameOver = false;
+                clearScreen();
+                changeSnakePosition();
+                checkAppleCollision();
+                drawApple();
+                drawSnake();
+                drawScore();
+                setTimeout(drawGame, 1000 / speed);
+              }
+            }
+        }
+
+        function drawScore() {
+          ctx.fillStyle = "white";
+          ctx.font = "10px Verdana";
+          ctx.fillText("Score " + score, canvas.width - 50, 10);
+        }
+
+        function clearScreen() {
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+          ctx.fillStyle = "lime";
+          for (let i = 0; i < snake.length; i++) {
+            let part = snake[i];
+            ctx.fillRect(part.x * tileCount, part.y * tileCount, tileSize, tileSize);
+          }
+
+          snake.push(new SnakePart(headX, headY)); //put an item at the end of the list next to the head
+          if (snake.length > tailLength) {
+            snake.shift(); // remove the furthest item from the snake parts if have more than our tail size.
+          }
+
+          ctx.fillStyle = "magenta";
+          ctx.fillRect(headX * tileCount, headY * tileCount, tileSize, tileSize);
+
+          if (headX < 0) {
+            headX = tileCount;
+          } else if (headX === tileCount) {
+            headX = -1;
+          } else if (headY < 0) {
+            headY = tileCount;
+          } else if (headY === tileCount) {
+            headY = -1;
+          }
+        }
+
+        function changeSnakePosition() {
+          headX = headX + xVelocity;
+          headY = headY + yVelocity;
+        }
+
+        function drawApple() {
+          ctx.fillStyle = "orange";
+          ctx.fillRect(appleX * tileCount, appleY * tileCount, tileSize, tileSize);
+        }
+
+        function pickLocation() {
+          appleX = Math.floor(Math.random() * tileCount);
+          appleY = Math.floor(Math.random() * tileCount);
+        };
+
+        function checkAppleCollision() {
+          if (appleX === headX && appleY == headY) {
+            pickLocation();
+            tailLength++;
+            score++;
+          }
+        }
+
+        document.body.addEventListener("keydown", keyDown);
+
+        function keyDown(event) {
+          //up
+          if (event.keyCode == 38 || event.keyCode == 87) {
+            //87 is w
+            if (inputsYVelocity == 1 || headX < 0 || headX === tileCount) return;
+            inputsYVelocity = -1;
+            inputsXVelocity = 0;
+          }
+
+          //down
+          if (event.keyCode == 40 || event.keyCode == 83) {
+            // 83 is s
+            if (inputsYVelocity == -1 || headX < 0 || headX === tileCount) return;
+            inputsYVelocity = 1;
+            inputsXVelocity = 0;
+          }
+
+          //left
+          if (event.keyCode == 37 || event.keyCode == 65) {
+            // 65 is a
+            if (inputsXVelocity == 1 || headY < 0 || headY === tileCount) return;
+            inputsYVelocity = 0;
+            inputsXVelocity = -1;
+          }
+
+          //right
+          if (event.keyCode == 39 || event.keyCode == 68) {
+            //68 is d
+            if (inputsXVelocity == -1 || headY < 0 || headY === tileCount) return;
+            inputsYVelocity = 0;
+            inputsXVelocity = 1;
+          }
+
+        }
+
+        drawGame();
+
+
+    </script>
+</body>
+</html>
